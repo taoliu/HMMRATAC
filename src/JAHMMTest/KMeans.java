@@ -25,7 +25,7 @@ import net.sf.javaml.tools.DatasetTools;
  * @author Thomas Abeel
  * 
  */
-public class Kmeans implements Clusterer {
+public class KMeans implements Clusterer {
     /**
      * The number of clusters.
      */
@@ -66,7 +66,7 @@ public class Kmeans implements Clusterer {
      * Constuct a default K-means clusterer with 100 iterations, 4 clusters, a
      * default random generator and using the Euclidean distance.
      */
-    public Kmeans() {
+    public KMeans() {
         this(4);
     }
 
@@ -77,7 +77,7 @@ public class Kmeans implements Clusterer {
      * 
      * @param k the number of clusters to create
      */
-    public Kmeans(int k) {
+    public KMeans(int k) {
         this(k, 100);
     }
 
@@ -92,7 +92,7 @@ public class Kmeans implements Clusterer {
      * @param iterations
      *            the number of iterations
      */
-    public Kmeans(int clusters, int iterations) {
+    public KMeans(int clusters, int iterations) {
         this(clusters, iterations, new EuclideanDistance());
     }
 
@@ -109,7 +109,7 @@ public class Kmeans implements Clusterer {
      * @param dm
      *            the distance measure to use
      */
-    public Kmeans(int clusters, int iterations, DistanceMeasure dm) {
+    public KMeans(int clusters, int iterations, DistanceMeasure dm) {
         this.numberOfClusters = clusters;
         this.numberOfIterations = iterations;
         this.dm = dm;
