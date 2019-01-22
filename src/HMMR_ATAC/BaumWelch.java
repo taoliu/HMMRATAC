@@ -72,6 +72,7 @@ public class BaumWelch {
             scaled = sbw.iterate(firstHmm, obs);
             scaled = checkModel(scaled);
             if (converged(scaled, firstHmm)) {
+                System.out.println("** Model from Baum-Welch is converged. **");
                 break;
             }
             firstHmm = scaled;

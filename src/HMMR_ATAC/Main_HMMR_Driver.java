@@ -51,7 +51,8 @@ public class Main_HMMR_Driver {
 
     private static int lower = 10; //lower bound for fold change range for choosing training sites
     private static int upper = 20; //upper bound for fold change range for choosing training sites
-    private static int zscore = 100; //zscored read coverage to exclude from viterbi decoding
+    private static float zscore = 100; //zscored read coverage to exclude from viterbi decoding
+    private static float zscoreprescan = -10; //above this zscore to be included in viterbi decoding
     private static String output; //output name 
     private static boolean peaks; // whether to print peaks
     private static boolean bg; // whether to print bedgraph
@@ -82,6 +83,7 @@ public class Main_HMMR_Driver {
         lower = p.getLower();
         upper = p.getUpper();
         zscore = p.getZscore();
+        zscoreprescan = p.getZscorePrescan();
         output = p.getOutput();
         peaks = p.getPeaks();
         bg = p.getBedgraph();
@@ -115,9 +117,9 @@ public class Main_HMMR_Driver {
             p.printUsage();
             System.exit(1);
         }
-        logger.config("Arguments Used:");
+        logger.info("Arguments Used:");
         for (int i = 0; i < args.length - 1; i += 2) {
-            logger.config(args[i] + "\t" + args[i + 1]);
+            logger.info(args[i] + "\t" + args[i + 1]);
         }
 
         //Read in genome size stats
@@ -242,11 +244,14 @@ public class Main_HMMR_Driver {
         double genomeStd = fc.getSTD();
 
         ArrayList<TagNode> train = new MergeBed(fc.getBetweenRanges(upper, lower)).getResults();
-
-        ArrayList<TagNode> newTrain = new ArrayList<>();
+        logger.info("Regions fallen into training range:" + train.size());
+        
+        ArrayList<TagNode> newTrain = new ArrayList<TagNode>();
         int maxTrain;
         if (train.size() > 1000) {
             maxTrain = 1000;
+            logger.info("Pick 1000 out of them");
+
         } else {
             maxTrain = train.size();
         }
@@ -325,7 +330,7 @@ public class Main_HMMR_Driver {
             logger.info("Kmeans Model:\n" + kmeans.getHMM().toString()); // added 7-13-18
             //System.out.println(kmeans.getHMM().toString());
 
-            hmm = new BaumWelch(kmeans.getHMM(), holder.getBWObs(), 150, 0.001).build();
+            hmm = new BaumWelch(kmeans.getHMM(), holder.getBWObs(), 1000, 0.001).build();
 
             //System.out.println(hmm.toString());
             kmeans = null;
@@ -390,7 +395,16 @@ public class Main_HMMR_Driver {
 		 * Can also split into whatever sized chunks the users prefers
 		 * May be necessary to split into smaller chunks for machines with less memory
          */
-        ArrayList<TagNode> split = new SplitBed(genomeStats, vitWindow).getResult();
+                
+        logger.info(" Mean:" + fc.getMean() + " Std:" + fc.getSTD());
+        logger.info(" The lowest zscore is " +  (0 - fc.getMean()) / fc.getSTD());
+        
+        ArrayList<TagNode> split = fc.getBetweenZRanges(zscore, zscoreprescan);
+        logger.info("Pre-scan regions found between zscore "+ zscoreprescan + " and " + zscore + " : " + split.size());
+         
+        
+        //ArrayList<TagNode> split = new SplitBed(genomeStats, vitWindow).getResult();
+        
         genomeStats = null;
 
         /*
@@ -400,7 +414,7 @@ public class Main_HMMR_Driver {
         split = null;
         exclude = null;
 
-        logger.info("Genome split and subtracted masked regions");
+        logger.info("After exluding regions with abnormally high enrichment, # of splitted chunks: " + vitBed.size());
 
         /*
 		 * Run viterbi on the whole genome
